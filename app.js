@@ -6,13 +6,14 @@ const bodyParser = require('body-parser');
 const expressHandlebars = require('express-handlebars');
 const flash = require('connect-flash');
 const session = require('express-session');
-const mongoose = require('mongoose')
-const passport = require('passport')
+const mongoose = require('mongoose');
+const passport = require('passport');
+const db = require('./config/db');
  
 //require('./config/passport')
 
 mongoose.Promise = global.Promise
-mongoose.connect('mongodb://localhost:27017/third')
+mongoose.connect(db.url)
 
 // 1
 const app = express()
