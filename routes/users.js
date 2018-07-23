@@ -5,16 +5,28 @@ const passport = require('passport')
  
 const User = require('../models/user')
  
- 
-//validation schema
- 
 const userSchema = Joi.object().keys({
   email: Joi.string().email().required(),
   username: Joi.string().required(),
   password: Joi.string().regex(/^[a-zA-Z0-9]{6,30}$/).required(),
   confirmationPassword: Joi.any().valid(Joi.ref('password')).required()
 })
- 
+
+const logSchema = Joi.object().keys({
+  email: Joi.string().email().required(),
+  password: Joi.string().regex(/^[a-zA-Z0-9]{6,30}$/).required()
+})
+
+function requiresLogin(req, res, next) {
+  if (req.session && req.session.userId) {
+    return next();
+  } else {
+    var err = new Error('You must be logged in to view this page.');
+    err.status = 401;
+    return res.redirect('/')
+  }
+}
+
 router.route('/register')
   .get((req, res) => {
     res.render('register')
@@ -47,7 +59,7 @@ router.route('/register')
       res.redirect('/users/login')
  
     } catch(error) {
-      next(error)
+      return res.redirect('/')
     }
   })
 
@@ -56,8 +68,47 @@ router.route('/register')
     res.render('login')
   })
   .post(async (req, res, next) => {
+      try {
+        const result = Joi.validate(req.body, logSchema)
+        if(result.error) {
+          req.flash('error', 'Invalid data entered. Please try again')
+          res.redirect('/users/login')
+          return
+        }
+        const hash = await User.hashPassword(result.value.password)
  
-      res.render('dashboard')
+        result.value.password = hash
+
+        User.authenticate(req.body.email, req.body.password, function(error, user) {
+          if (error || !user) {
+            var err = new Error('Wrong email or password.');
+            err.status = 401;
+            return next(err);
+          } else {
+            req.session.userId = user._id;
+            req.session.username = user.username;
+            return res.redirect('/users/dashboard')
+          }
+        })
+      } catch (error) {
+        return res.redirect('/')
+      }
   })
  
+  router.route('/dashboard')
+  .get(requiresLogin, (req, res) => {
+    console.log(req.session.username)
+    return res.render('dashboard', { username : req.session.username})
+  })
+
+  router.get('/logout', requiresLogin, function(req, res, next) {
+      try {
+        req.session.destroy(function(err) {
+          return res.redirect('/');
+        })
+      } catch(err) {
+        return res.redirect('/')
+      }
+  });
+
   module.exports = router
