@@ -10,11 +10,15 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const db = require('./config/db');
 
+global.__basedir = __dirname;
+
 mongoose.Promise = global.Promise
 mongoose.connect(db.url)
 
 const app = express()
 app.use(morgan('dev'))
+
+app.use(express.static('public'))
 
 app.set('views', path.join(__dirname, 'views'))
 app.engine('handlebars', expressHandlebars({ defaultLayout: 'layout' }))
@@ -42,6 +46,7 @@ app.use((req, res, next) => {
 
 app.use('/', require('./routes/index'))
 app.use('/users', require('./routes/users'))
+app.use('/reg', require('./routes/reguser'))
  
 app.use((req, res, next) => {
   res.render('notFound')

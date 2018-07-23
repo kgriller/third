@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router()
 const Joi = require('joi')
 const passport = require('passport')
+const fs = require('fs')
  
 const User = require('../models/user')
  
@@ -55,7 +56,7 @@ router.route('/register')
       const newUser = await new User(result.value)
       await newUser.save()
  
-      req.flash('success', 'Registration successfully, go ahead and login.')
+      req.flash('success', 'Registration successfull, go ahead and login.')
       res.redirect('/users/login')
  
     } catch(error) {
@@ -87,28 +88,12 @@ router.route('/register')
           } else {
             req.session.userId = user._id;
             req.session.username = user.username;
-            return res.redirect('/users/dashboard')
+            return res.redirect('/reg/dashboard')
           }
         })
       } catch (error) {
         return res.redirect('/')
       }
   })
- 
-  router.route('/dashboard')
-  .get(requiresLogin, (req, res) => {
-    console.log(req.session.username)
-    return res.render('dashboard', { username : req.session.username})
-  })
-
-  router.get('/logout', requiresLogin, function(req, res, next) {
-      try {
-        req.session.destroy(function(err) {
-          return res.redirect('/');
-        })
-      } catch(err) {
-        return res.redirect('/')
-      }
-  });
 
   module.exports = router
